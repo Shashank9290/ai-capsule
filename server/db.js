@@ -1,15 +1,14 @@
 // db.js
-// SQLite storage for AI Capsule using better-sqlite3 (synchronous, zero-config).
+// SQLite storage using Node's built-in node:sqlite module (no native
+// compilation required - works identically on Windows, Render, etc).
 // NOTE: on Render's free tier the filesystem is ephemeral, so this file (and
 // its data) may be reset on restart/redeploy. See README for details.
 
-const Database = require('better-sqlite3');
+const { DatabaseSync } = require('node:sqlite');
 const path = require('path');
 
 const dbPath = path.join(__dirname, 'capsules.db');
-const db = new Database(dbPath);
-
-db.pragma('journal_mode = WAL');
+const db = new DatabaseSync(dbPath);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS capsules (
