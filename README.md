@@ -5,17 +5,12 @@ CSE3CWA/CSE5006 Assignment 3. React frontend, Node/Express backend, GitHub
 OAuth login, an Express-issued application JWT stored in a Secure HttpOnly
 cookie, and SQLite storage.
 
-> **Before you submit:** every `TODO` / `YOUR-...` placeholder below must be
-> filled in with your real, deployed values. This template will not earn
-> deployment marks on its own — it has to actually be running on a public
-> URL with your own GitHub OAuth app configured.
-
 ---
 
 ## 1. Public deployed URL
 
-- **Live URL:** `https://TODO-your-app.onrender.com` (or your Azure URL)
-- **Cloud platform used:** TODO (Render / Azure App Service / other)
+- **Live URL:** https://ai-capsule-i2bn.onrender.com
+- **Cloud platform used:** Render
 
 ## 2. Tech stack
 
@@ -25,38 +20,36 @@ cookie, and SQLite storage.
 | Backend | Node.js + Express |
 | Auth | GitHub OAuth → Express-issued application JWT |
 | Session | JWT in a `Secure, HttpOnly` cookie named `token` |
-| Storage | SQLite (`better-sqlite3`) |
+| Storage | SQLite (Node's built-in `node:sqlite` module) |
 
 ## 3. Project structure
-
-```
 ai-capsule/
-├── package.json              # root: orchestrates build/start
+├── package.json # root: orchestrates build/start
 ├── server/
-│   ├── index.js              # Express app entry point
-│   ├── db.js                 # SQLite connection + schema
-│   ├── middleware/
-│   │   └── authenticateJWT.js
-│   ├── routes/
-│   │   ├── auth.js           # GitHub OAuth + JWT issuance
-│   │   └── capsules.js       # protected CRUD routes
-│   └── .env.example
+│ ├── index.js # Express app entry point
+│ ├── db.js # SQLite connection + schema
+│ ├── middleware/
+│ │ └── authenticateJWT.js
+│ ├── routes/
+│ │ ├── auth.js # GitHub OAuth + JWT issuance
+│ │ └── capsules.js # protected CRUD routes
+│ └── .env.example
 └── client/
-    ├── package.json
-    ├── vite.config.js
-    ├── index.html
-    └── src/
-        ├── main.jsx
-        ├── App.jsx
-        ├── api.js
-        ├── pages/
-        │   ├── Home.jsx
-        │   ├── Login.jsx
-        │   └── Dashboard.jsx
-        └── components/
-            ├── CapsuleForm.jsx
-            └── CapsuleList.jsx
-```
+├── package.json
+├── vite.config.js
+├── index.html
+└── src/
+├── main.jsx
+├── App.jsx
+├── api.js
+├── pages/
+│ ├── Home.jsx
+│ ├── Login.jsx
+│ └── Dashboard.jsx
+└── components/
+├── CapsuleForm.jsx
+└── CapsuleList.jsx
+
 
 ## 4. Install & run locally
 
@@ -96,10 +89,10 @@ Set these in your cloud platform's dashboard (never commit real values —
 | `GITHUB_CALLBACK_URL` | Must exactly match the callback URL registered on GitHub, e.g. `https://YOUR-APP/api/auth/github/callback` |
 | `CLIENT_URL` | Public URL of the deployed app (CORS + redirect target) |
 
-Create the GitHub OAuth App at **github.com → Settings → Developer
+Created a GitHub OAuth App at **github.com → Settings → Developer
 settings → OAuth Apps**, with:
-- Homepage URL: `https://YOUR-APP`
-- Authorization callback URL: `https://YOUR-APP/api/auth/github/callback`
+- Homepage URL: `https://ai-capsule-i2bn.onrender.com`
+- Authorization callback URL: `https://ai-capsule-i2bn.onrender.com/api/auth/github/callback`
 
 ## 6. API routes
 
@@ -141,55 +134,80 @@ no CORS configuration is needed for normal use.
 
 ## 8. Database & persistence
 
-- SQLite via `better-sqlite3`, schema created automatically on first run
+- SQLite via Node's built-in `node:sqlite` module (`DatabaseSync`), no
+  native compilation required. Schema created automatically on first run
   (`server/db.js`).
 - Each row's `user_id` is the GitHub numeric user ID, taken from the
   verified JWT.
-- **Persistence:** TODO — state clearly whether your deployed platform's
-  filesystem is persistent or ephemeral. On Render's free web service the
-  local filesystem is ephemeral, so the SQLite file (and its data) can be
-  lost on restart/redeploy. If you switched to Render/Azure managed
-  PostgreSQL for persistence, note that here instead.
+- **Persistence:** This deployment uses SQLite on Render's free web
+  service tier, which has an ephemeral filesystem. Saved prompt records
+  may be lost when the service restarts, redeploys, or spins down after
+  inactivity and spins back up.
 
 ## 9. Required cURL checks
 
-Run against your **deployed** URL before submitting, and paste the actual
-output below (not this placeholder):
+Run against the deployed URL:
 
 ```bash
 # Test 1 - no authentication
-curl -i https://YOUR-APP/api/capsules
+curl -i https://ai-capsule-i2bn.onrender.com/api/capsules
 # Expected: 401 Unauthorized
 
 # Test 2 - fake / invalid JWT
-curl -i -H "Cookie: token=fake-token-123" https://YOUR-APP/api/capsules
+curl -i -H "Cookie: token=fake-token-123" https://ai-capsule-i2bn.onrender.com/api/capsules
 # Expected: 401 Unauthorized
 ```
 
-**Test 1 result:** TODO — paste real output here.
+**Test 1 result:**
 
-**Test 2 result:** TODO — paste real output here.
+HTTP/1.1 401 Unauthorized
+{"error":"Unauthorized: no token provided"}
+
+
+**Test 2 result:**
+
+HTTP/1.1 401 Unauthorized
+{"error":"Unauthorized: invalid or expired token"}
+
 
 ## 10. Known limitation
 
-TODO — one honest limitation of this submission, e.g. SQLite storage is
-ephemeral on the free hosting tier, no refresh-token rotation, no file
-upload for screenshots (URL only), etc.
+SQLite storage is ephemeral on Render's free tier — saved prompt records
+may be lost if the service restarts, redeploys, or spins down and back up
+after inactivity. A managed Postgres database (e.g. Render PostgreSQL)
+would be needed for persistent storage across restarts.
 
 ## 11. AI-assisted development statement
 
-- **AI tool(s) used:** TODO (e.g. Claude)
-- **Problem found and corrected in AI-generated code/config:** TODO — be
-  specific (e.g. "the initial OAuth callback used the GitHub access token
-  directly as the session token instead of issuing a separate application
-  JWT; fixed by signing a new JWT with `jsonwebtoken` after fetching the
-  GitHub profile").
+- **AI tool(s) used:** Claude
+
+- **Problem found and corrected in AI-generated code/config:** The initial
+  database setup used `better-sqlite3`, which requires native C++
+  compilation via node-gyp. This failed both locally on Windows (missing
+  Visual Studio Build Tools) and again on Render's Linux build servers
+  during deployment. Fixed by switching to Node's built-in `node:sqlite`
+  module (`DatabaseSync`), which needs no native compilation and works
+  identically across environments. Also found and fixed a related issue
+  where `vite` was listed under `devDependencies` in `client/package.json`,
+  causing the Render build to fail with `vite: not found` because
+  `NODE_ENV=production` skips dev dependency installation — moved `vite`
+  and its React plugin into regular `dependencies`.
+
 - **How OAuth login, JWT verification and protected API behaviour were
-  verified:** TODO (e.g. manual login test, the two cURL checks above,
-  inspecting the `token` cookie's flags in devtools).
-- **How CRUD behaviour and user data ownership were verified:** TODO (e.g.
-  logged in as two different GitHub accounts and confirmed each only sees
-  its own records).
-- **One implementation/deployment decision made and explainable:** TODO
-  (e.g. "chose to serve the React build from Express on the same origin to
-  avoid cross-site cookie issues with `SameSite`/CORS").
+  verified:** Manually logged in via GitHub OAuth on both localhost and
+  the deployed URL, confirmed the `token` cookie was set as
+  HttpOnly/Secure via browser devtools, and ran the two required cURL
+  checks (no token, fake token) against both environments — both
+  correctly returned 401 Unauthorized with the expected error messages.
+
+- **How CRUD behaviour and user data ownership were verified:** Manually
+  created, edited, and deleted prompt records after logging in on both
+  localhost and the deployed app, confirming each operation persisted and
+  reflected correctly in the UI immediately after each action.
+
+- **One implementation/deployment decision made and explainable:** Chose
+  to serve the built React frontend directly from Express on the same
+  origin/port (rather than deploying frontend and backend as two separate
+  services), to avoid cross-origin CORS and cookie (`SameSite`) issues
+  with the JWT authentication flow, as recommended in the assignment
+  brief.
